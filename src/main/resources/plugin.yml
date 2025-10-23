@@ -3,7 +3,7 @@ name: ${pluginName}
 version: ${version}
 main: ru.oftendev.recipebook.RecipeBookPlugin
 api-version: 1.17
-authors: [ _OfTeN_ ]
+authors: [ _OfTeN_, joogiebear ]
 depend:
   - eco
 commands:

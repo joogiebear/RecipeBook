@@ -1,0 +1,8 @@
+messages:
+  prefix: "&a&lRecipeBook&r &8» &r"
+  no-permission: "&cYou don't have permission to do this!"
+  not-player: "&cThis command must be run by a player"
+  invalid-command: "&cUnknown subcommand!"
+  invalid-item: "&cInvalid item!"
+  no-recipe: "&cNo recipe found for specified item!"
+  reloaded: "Reloaded!"

@@ -1,0 +1,13 @@
+folia-supported: true
+name: ${pluginName}
+version: ${version}
+main: ru.oftendev.recipebook.RecipeBookPlugin
+api-version: 1.17
+authors: [ _OfTeN_ ]
+depend:
+  - eco
+commands:
+  recipebook:
+    description: Base Command
+    permission: recipebook.command.recipebook
+    aliases: [ rbook ]

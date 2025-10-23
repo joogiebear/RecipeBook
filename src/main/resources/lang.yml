@@ -6,3 +6,5 @@ messages:
   invalid-item: "&cInvalid item!"
   no-recipe: "&cNo recipe found for specified item!"
   reloaded: "Reloaded!"
+  craft-success: "&aSuccessfully crafted &f%item%&a!"
+  craft-insufficient: "&cYou don't have enough materials to craft this item!"

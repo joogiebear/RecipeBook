@@ -123,4 +123,18 @@ craft-gui:
       column: 5
       item: barrier name:"&cBack"
       lore: []
+      click_sound: ui.button_click
+    quick-craft:
+      row: 5
+      column: 3
+      item: crafting_table name:"&aQuick Craft"
+      lore:
+        - ""
+        - "&7Materials:"
+        - "%materials%"
+        - ""
+        - "&bLeft Click&f to craft"
+        - ""
+      success_sound: entity.player.levelup
+      fail_sound: entity.villager.no
   custom-slots: []

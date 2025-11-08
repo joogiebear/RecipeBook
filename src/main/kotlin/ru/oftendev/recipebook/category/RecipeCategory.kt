@@ -77,6 +77,17 @@ fun canCraft(player: Player, itemStack: ItemStack): Boolean {
 
 fun getCustomItemRecipe(item: CustomItem): List<ItemStack>? {
     recipeBookPlugin.logger.info { "Checking custom item ${item.key}" }
+
+    // Check if it's a VaultPack item
+    if (item.key.namespace == "vaultpack") {
+        recipeBookPlugin.logger.info { "Found VaultPack item, checking recipe" }
+        val recipe = ru.oftendev.recipebook.integration.VaultPackIntegration.getBackpackRecipe(item.key.key)
+        if (recipe != null) {
+            recipeBookPlugin.logger.info { "Found VaultPack recipe with ${recipe.size} items" }
+            return recipe
+        }
+    }
+
     val allRecipes = getRecipesBiMap().values
     val foundRecipe = allRecipes.firstOrNull { item.test(it.output) }
 
@@ -130,6 +141,38 @@ fun getRecipe(itemStack: ItemStack): List<ItemStack>? {
 //                result
 //        }
 //    }
+}
+
+fun getRecipeResult(itemStack: ItemStack): ItemStack? {
+    val customItem = Items.getCustomItem(itemStack)
+
+    if (customItem != null) {
+        // Check if it's a VaultPack item
+        if (customItem.key.namespace == "vaultpack") {
+            val backpackType = ru.oftendev.recipebook.integration.VaultPackIntegration.getBackpackType(customItem.key.key)
+            if (backpackType != null) {
+                // Return the clean VaultPack item
+                return Items.lookup("vaultpack:${customItem.key.key}").item
+            }
+        }
+
+        // Try to get eco recipe result
+        val allRecipes = getRecipesBiMap().values
+        val foundRecipe = allRecipes.firstOrNull { customItem.test(it.output) }
+        if (foundRecipe != null) {
+            val foundEcoRecipe = Recipes.getRecipe(foundRecipe.key)
+            if (foundEcoRecipe != null) {
+                return foundEcoRecipe.output.clone()
+            }
+        }
+    }
+
+    // Fallback to vanilla recipe result
+    val recipe = Bukkit.getRecipesFor(itemStack)
+        .filterIsInstance<ShapedRecipe>()
+        .firstOrNull()
+
+    return recipe?.result?.clone()
 }
 
 class CategoryStack(private val parent: RecipeCategory,

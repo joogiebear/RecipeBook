@@ -6,6 +6,9 @@ api-version: 1.17
 authors: [ _OfTeN_, joogiebear ]
 depend:
   - eco
+softdepend:
+  - EcoShop
+  - VaultPack
 commands:
   recipebook:
     description: Base Command

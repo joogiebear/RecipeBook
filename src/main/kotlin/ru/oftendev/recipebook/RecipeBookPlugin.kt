@@ -8,6 +8,8 @@ import net.kyori.adventure.key.Key
 import net.kyori.adventure.sound.Sound
 import ru.oftendev.recipebook.category.RecipeCategories
 import ru.oftendev.recipebook.commands.MainCommand
+import ru.oftendev.recipebook.integration.ShopIntegration
+import ru.oftendev.recipebook.integration.VaultPackIntegration
 
 lateinit var recipeBookPlugin: RecipeBookPlugin
     private set
@@ -18,6 +20,8 @@ class RecipeBookPlugin: EcoPlugin() {
     }
 
     override fun handleEnable() {
+        ShopIntegration.init(this)
+        VaultPackIntegration.init(this)
         RecipeCategories.reload()
     }
 

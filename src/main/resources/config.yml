@@ -1,3 +1,10 @@
+# Shop Integration Settings
+shop-integration:
+  # Enable integration with EcoShop to allow purchasing missing materials
+  enabled: true
+  # Show shop prices in the QuickCraft lore for missing materials
+  show-prices: true
+
 default-category: "main"
 categories:
   - id: "main"

@@ -7,6 +7,7 @@ group = "ru.oftendev"
 version = findProperty("version")!!
 
 repositories {
+    mavenLocal()
     mavenCentral()
     maven("https://repo.papermc.io/repository/maven-public/")
     maven("https://repo.auxilor.io/repository/maven-public/")
@@ -18,6 +19,8 @@ repositories {
 dependencies {
     compileOnly("io.papermc.paper:paper-api:1.21.1-R0.1-SNAPSHOT")
     compileOnly("com.willfp:eco:6.76.2")
+    compileOnly("com.willfp:EcoShop:1.38.0")
+    compileOnly(files("libs/VaultPack.jar"))
     testImplementation(kotlin("test"))
 }
 

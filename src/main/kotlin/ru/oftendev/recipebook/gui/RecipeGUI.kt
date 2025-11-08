@@ -10,12 +10,15 @@ import com.willfp.eco.core.gui.slot.Slot
 import com.willfp.eco.core.items.Items
 import com.willfp.eco.core.items.builder.ItemStackBuilder
 import com.willfp.eco.core.items.builder.modify
+import com.willfp.eco.util.formatEco
 import net.kyori.adventure.sound.Sound
 import org.bukkit.Material
 import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
 import ru.oftendev.recipebook.category.canCraft
 import ru.oftendev.recipebook.category.getRecipe
+import ru.oftendev.recipebook.category.getRecipeResult
+import ru.oftendev.recipebook.integration.ShopIntegration
 import ru.oftendev.recipebook.makesound
 import ru.oftendev.recipebook.recipeBookPlugin
 
@@ -137,16 +140,40 @@ class RecipeGUI(val config: Config, val stack: ItemStack) {
 
         if (materialsLoreIndex != -1) {
             loreLines.removeAt(materialsLoreIndex)
-            val materialLines = materialCounts.map { (item, has, needs) ->
+            val materialLines = mutableListOf<String>()
+
+            for ((item, has, needs) in materialCounts) {
                 val color = if (has >= needs) "&a" else "&c"
                 val itemName = if (item.hasItemMeta() && item.itemMeta.hasDisplayName()) {
                     item.itemMeta.displayName
                 } else {
                     item.type.name.lowercase().replace("_", " ").replaceFirstChar { it.uppercase() }
                 }
-                "$color  $has/$needs &7$itemName"
+
+                var line = "$color  $has/$needs &7$itemName"
+
+                // Add shop info if enabled and material is missing
+                if (ShopIntegration.isEnabled() && has < needs) {
+                    val shopInfo = ShopIntegration.getMaterialShopInfo(player, item, needs - has)
+                    if (shopInfo != null && ShopIntegration.shouldShowPrices()) {
+                        val affordColor = if (shopInfo.canAfford) "&e" else "&c"
+                        line += " $affordColor(${shopInfo.priceDisplay})"
+                    } else if (shopInfo != null) {
+                        line += " &e(Available in shop)"
+                    }
+                }
+
+                materialLines.add(line)
             }
+
             loreLines.addAll(materialsLoreIndex, materialLines)
+
+            // Add purchase hint if shop integration is enabled and materials are missing
+            if (ShopIntegration.isEnabled() && !hasAllMaterials) {
+                loreLines.add("")
+                loreLines.add("&7Click to purchase missing materials")
+                loreLines.add("&7and craft automatically!")
+            }
         }
 
         return Slot.builder(
@@ -156,7 +183,13 @@ class RecipeGUI(val config: Config, val stack: ItemStack) {
         )
             .onLeftClick { t, _ ->
                 val p = t.whoClicked as Player
-                if (hasAllMaterials) {
+
+                // Check materials again (dynamic check)
+                val currentMaterialCounts = checkMaterials(p, items)
+                val currentHasAllMaterials = currentMaterialCounts.all { it.second >= it.third }
+
+                if (currentHasAllMaterials) {
+                    // Has all materials, just craft
                     if (craftItem(p, items)) {
                         p.sendMessage(
                             recipeBookPlugin.langYml.getFormattedString("messages.craft-success")
@@ -172,7 +205,44 @@ class RecipeGUI(val config: Config, val stack: ItemStack) {
                             t.player.playSound(failSound)
                         }
                     }
+                } else if (ShopIntegration.isEnabled()) {
+                    // Missing materials but shop integration is enabled - try to purchase
+                    val missingMaterials = currentMaterialCounts
+                        .filter { it.second < it.third }
+                        .map { (item, has, needs) ->
+                            val sampleItem = item.clone().apply { amount = 1 }
+                            sampleItem to (needs - has)
+                        }
+
+                    val purchaseResult = ShopIntegration.purchaseMaterials(p, missingMaterials)
+
+                    if (purchaseResult.success) {
+                        // Successfully purchased, now try to craft
+                        if (craftItem(p, items)) {
+                            p.sendMessage(
+                                recipeBookPlugin.langYml.getFormattedString("messages.craft-success")
+                                    .replace("%item%", stack.itemMeta.displayName)
+                            )
+                            p.sendMessage("&aPurchased missing materials from shop!".formatEco(p))
+                            if (successSound != null) {
+                                t.player.playSound(successSound)
+                            }
+                            p.closeInventory()
+                        } else {
+                            p.sendMessage(recipeBookPlugin.langYml.getFormattedString("messages.craft-insufficient"))
+                            if (failSound != null) {
+                                t.player.playSound(failSound)
+                            }
+                        }
+                    } else {
+                        // Could not purchase
+                        p.sendMessage("&c${purchaseResult.message}".formatEco(p))
+                        if (failSound != null) {
+                            t.player.playSound(failSound)
+                        }
+                    }
                 } else {
+                    // Missing materials and shop integration disabled
                     p.sendMessage(recipeBookPlugin.langYml.getFormattedString("messages.craft-insufficient"))
                     if (failSound != null) {
                         t.player.playSound(failSound)
@@ -218,8 +288,14 @@ class RecipeGUI(val config: Config, val stack: ItemStack) {
             }
         }
 
-        // Give the crafted item
-        player.inventory.addItem(stack.clone())
+        // Give the crafted item - use clean recipe result instead of display stack
+        val recipeResult = getRecipeResult(stack)
+        if (recipeResult != null) {
+            player.inventory.addItem(recipeResult)
+        } else {
+            // Fallback to cloned stack if recipe result not found
+            player.inventory.addItem(stack.clone())
+        }
 
         return true
     }
